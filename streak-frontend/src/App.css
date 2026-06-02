@@ -257,6 +257,11 @@ input:focus {
   padding: 0.9rem 1rem;
 }
 
+.banner--notice {
+  background: rgba(139, 209, 124, 0.12);
+  color: #dff8d8;
+}
+
 .banner-error,
 .banner--error {
   background: rgba(255, 127, 127, 0.12);

@@ -2244,7 +2244,8 @@ input:focus {
 }
 
 
-.font-size-select {
+.font-size-select,
+.font-family-select {
   background-color: transparent;
   color: var(--text);
   border: 1px solid var(--line);
@@ -2259,21 +2260,25 @@ input:focus {
   align-items: center;
 }
 
-.theme-light .font-size-select {
+.theme-light .font-size-select,
+.theme-light .font-family-select {
   background-color: #ffffff;
   color: #0f172a;
   border-color: #cbd5e1;
 }
 
-.font-size-select option {
+.font-size-select option,
+.font-family-select option {
   background-color: #1e293b;
   color: #f8fafc;
 }
 
-.theme-light .font-size-select option {
+.theme-light .font-size-select option,
+.theme-light .font-family-select option {
   background-color: #ffffff;
   color: #0f172a;
 }
+
 
 
 /* Workspace sheet layout */
@@ -2338,33 +2343,944 @@ input:focus {
 
 /* Print CSS Stylesheet */
 @media print {
-  body * {
-    visibility: hidden;
+  body {
+    visibility: hidden !important;
+    background: #ffffff !important;
   }
-  .print-document-container, .print-document-container * {
-    visibility: visible;
+  
+  /* Use display: contents to let parents disappear from layout during print */
+  #root,
+  .dashboard-shell-container,
+  .modal-backdrop,
+  .modal-panel,
+  .journal-modal-container,
+  .journal-workspace-grid,
+  .journal-editor-workspace {
+    display: contents !important;
   }
-  .print-document-container {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-    background: transparent;
-    color: #000;
+  
+  /* Keep only the print-document-container visible */
+  .print-document-container,
+  .print-document-container * {
+    visibility: visible !important;
   }
-  /* Hide all app components */
-  .modal-backdrop, .modal-panel, .journal-date-bar, .journal-toolbar, .dashboard-shell-container {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+  
+  /* Hide specifically non-printable decorative items */
+  .journal-date-bar,
+  .journal-toolbar,
+  .journal-scrapbook-sidebar,
+  .notebook-spiral-rings,
+  .notebook-folded-corner,
+  .journal-sticker,
+  .polaroid-tape,
+  .polaroid-remove-btn,
+  .polaroid-uploader-box,
+  .private-journal-overlay {
     display: none !important;
   }
-  body {
-    background: white !important;
-    color: black !important;
+  
+  /* Style the print container itself to be a full-page clean white page */
+  .print-document-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 2.5rem 3rem !important;
+    box-shadow: none !important;
+    border: none !important;
+    display: block !important;
+    overflow: visible !important;
+    margin: 0 !important;
+  }
+  
+  /* Style printable parts of the notebook page */
+  .printable-header-doc {
+    display: block !important;
+    border-bottom: 2px solid #000000 !important;
+    margin-bottom: 1.5rem !important;
+  }
+  
+  .journal-handwritten-title {
+    color: #000000 !important;
+  }
+  
+  .journal-textarea-sheet {
+    background: none !important; /* Hide notebook blue lines on paper for maximum text legibility */
+    color: #000000 !important;
+    font-size: 12pt !important;
+    line-height: 1.8 !important;
+    padding: 0 !important;
+    margin-top: 1.5rem !important;
+  }
+  
+  .journal-textarea-sheet blockquote {
+    background: #f8fafc !important;
+    border-left: 4px solid #475569 !important;
+    color: #334155 !important;
+  }
+  
+  .polaroid-attachment-container {
+    float: right;
+    margin: 0 0 1.5rem 1.5rem !important;
+    page-break-inside: avoid;
+  }
+  
+  .polaroid-photo {
+    border: 1.5px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    transform: none !important; /* Align photos straight on printed sheet */
+  }
+  
+  .polaroid-caption {
+    color: #475569 !important;
   }
 }
+
+/* Digital Scrapbook & Journal Formatting Styles */
+
+.journal-workspace-grid {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+@media (max-width: 900px) {
+  .journal-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.journal-scrapbook-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 700px;
+  overflow-y: auto;
+  padding-right: 0.4rem;
+}
+
+.journal-scrapbook-sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.journal-scrapbook-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+}
+
+.scrapbook-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: var(--clay-shadow);
+  backdrop-filter: var(--blur-effect);
+}
+
+.scrapbook-card h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 700;
+  border-bottom: 1px dashed var(--line);
+  padding-bottom: 0.4rem;
+}
+
+/* Mood selector */
+.mood-emojis-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.25rem;
+}
+
+.mood-emoji-btn {
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+}
+
+.mood-emoji-btn:hover {
+  transform: scale(1.2);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mood-emoji-btn.active {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--mood-accent);
+  transform: scale(1.15);
+  box-shadow: 0 0 10px var(--mood-accent);
+}
+
+.mood-name-caption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  text-transform: capitalize;
+}
+
+/* Stars Rating */
+.stars-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.star-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+  padding: 0;
+}
+
+.star-btn:hover {
+  transform: scale(1.2);
+}
+
+.star-btn.filled {
+  color: #f59e0b; /* Amber rating star */
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+/* Gratitude & Goals Input Lists */
+.gratitude-list,
+.tomorrow-goals-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gratitude-list li,
+.tomorrow-goals-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gratitude-list .num,
+.tomorrow-goals-list .num {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--mood-accent);
+  width: 15px;
+  flex-shrink: 0;
+}
+
+.sidebar-text-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.95rem;
+  padding: 0.2rem 0;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+.sidebar-text-input:focus {
+  border-bottom-color: var(--mood-accent);
+}
+
+.sidebar-text-input.handwriting {
+  font-family: 'Caveat', cursive;
+  font-size: 1.25rem;
+}
+
+/* Song / Vinyl Disk */
+.song-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vinyl-disc-container {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+.vinyl-record {
+  width: 100%;
+  height: 100%;
+  background: #111827;
+  border: 4px solid #1f2937;
+  border-radius: 50%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  animation: spinVinyl 3s linear infinite;
+  position: relative;
+}
+
+.vinyl-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background: var(--mood-accent);
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+@keyframes spinVinyl {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Tags and Tag Pills */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tag-pill-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 99px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tag-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.tag-pill-btn.active {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--mood-accent);
+  color: var(--mood-accent);
+  font-weight: 600;
+}
+
+/* Private Lock Button */
+.lock-private-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  padding: 0.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.lock-private-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-style: solid;
+}
+
+.lock-private-btn.private {
+  border-color: #f43f5e;
+  background: rgba(244, 63, 94, 0.1);
+  color: #f43f5e;
+  border-style: solid;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.15);
+}
+
+/* Lined Sheet Styling */
+.journal-page-sheet {
+  background: #fdfbf7 !important; /* Cream color paper */
+  border-radius: 12px !important;
+  position: relative;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid #e6dfd3;
+  padding: 3.5rem 3rem 3rem 4.5rem !important; /* Left indentation for notebook spiral binders */
+  overflow: hidden;
+}
+
+.theme-light .journal-page-sheet {
+  background: #fdfbf7 !important;
+  border-color: #cbd5e1;
+}
+
+/* 3D Folded Page Corner Effect */
+.notebook-folded-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 35px 35px 0;
+  border-color: transparent transparent rgba(0, 0, 0, 0.05) transparent;
+  box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.notebook-folded-corner::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -35px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 35px 35px 0 0;
+  border-color: #e6dec9 transparent transparent transparent; /* darker back page fold color */
+  z-index: 11;
+}
+
+.theme-light .notebook-folded-corner::after {
+  border-color: #f1ebd9 transparent transparent transparent;
+}
+
+/* Notebook Spiral Metal Binder Loops */
+.notebook-spiral-rings {
+  position: absolute;
+  left: 1.25rem;
+  top: 2.5rem;
+  bottom: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.notebook-spiral-ring {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.notebook-spiral-ring .ring-hole {
+  width: 10px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.notebook-spiral-ring .metal-loop {
+  position: absolute;
+  left: -20px;
+  width: 25px;
+  height: 12px;
+  border: 2.5px solid #94a3b8; /* silver color metallic ring */
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  background: linear-gradient(90deg, #cbd5e1, #94a3b8);
+  box-shadow: -3px 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* Notebook vertical margin line */
+.journal-page-sheet::before {
+  content: "";
+  position: absolute;
+  left: 3.5rem;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: rgba(239, 68, 68, 0.35); /* vertical red margin line */
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Notebook horizontal lines styling */
+.journal-textarea-sheet {
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  font-size: 16px !important;
+  line-height: 32px !important; /* Force constant 32px line height */
+  color: #334155 !important;
+  background: linear-gradient(rgba(0, 0, 0, 0) 96%, #e2dcd0 96%) !important;
+  background-size: 100% 32px !important;
+  background-position: 0 28px !important; /* Position lines perfectly under text baselines */
+  padding-top: 4px !important; /* Adjust initial vertical typing offset */
+  z-index: 3;
+  position: relative;
+  border: none;
+  outline: none;
+}
+
+.theme-light .journal-textarea-sheet {
+  background: linear-gradient(rgba(0, 0, 0, 0) 96%, #cbd5e1 96%) !important;
+  background-size: 100% 32px !important;
+  background-position: 0 28px !important;
+  color: #0f172a !important;
+}
+
+.journal-textarea-sheet blockquote {
+  border-left: 4px solid var(--mood-accent);
+  background: rgba(255, 255, 255, 0.4);
+  margin: 1rem 0;
+  padding: 0.5rem 1.2rem;
+  font-style: italic;
+  color: #475569;
+  border-radius: 4px;
+}
+
+/* Handwritten Title and Callouts */
+.journal-handwritten-title {
+  font-family: 'Caveat', cursive !important;
+  font-size: 2.2rem !important;
+  font-weight: 700;
+  color: #0f172a !important;
+  margin: 0;
+}
+
+.journal-quote-callout {
+  margin-top: 2rem;
+  border-top: 1px dashed var(--mood-accent);
+  padding-top: 1rem;
+  text-align: center;
+  font-family: 'Caveat', cursive;
+  font-size: 1.45rem;
+  color: #475569;
+}
+
+.journal-quote-callout .quote-body {
+  margin: 0;
+  font-style: italic;
+}
+
+.journal-quote-callout .quote-by {
+  margin: 0.25rem 0 0 0;
+  font-size: 1.15rem;
+  color: var(--mood-accent);
+  font-weight: 600;
+}
+
+/* Polaroid Picture Memory Attachment */
+.polaroid-attachment-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.polaroid-photo {
+  background: white;
+  padding: 0.8rem 0.8rem 1.8rem 0.8rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid #cbd5e1;
+  transform: rotate(2.5deg);
+  position: relative;
+  width: 170px;
+  transition: transform 0.3s;
+  z-index: 10;
+}
+
+.polaroid-photo:hover {
+  transform: rotate(0deg) scale(1.05);
+  z-index: 11;
+}
+
+.polaroid-tape {
+  position: absolute;
+  top: -12px;
+  left: 35%;
+  width: 60px;
+  height: 18px;
+  background: rgba(139, 209, 124, 0.45); /* green translucent masking tape */
+  transform: rotate(-5deg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.polaroid-image-frame {
+  position: relative;
+  width: 154px;
+  height: 154px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.polaroid-image-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.polaroid-remove-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  transition: background 0.2s;
+}
+
+.polaroid-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+.polaroid-caption {
+  text-align: center;
+  font-family: 'Caveat', cursive;
+  font-size: 1.05rem;
+  color: #64748b;
+  margin-top: 0.6rem;
+  font-weight: bold;
+}
+
+.polaroid-uploader-box {
+  border: 2px dashed rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  padding: 0.8rem;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.01);
+  transition: background 0.2s, border-color 0.2s;
+  width: 170px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+}
+
+.polaroid-uploader-box:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: var(--mood-accent);
+}
+
+.polaroid-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  width: 100%;
+}
+
+.polaroid-upload-label .upload-icon {
+  font-size: 1.2rem;
+}
+
+/* Obfuscation for private day-logs */
+.private-obfuscated .journal-textarea-sheet {
+  filter: blur(8px);
+  user-select: none;
+  pointer-events: none;
+}
+
+.private-journal-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background: rgba(253, 251, 247, 0.95);
+  border: 1px dashed #e6dfd3;
+  padding: 2rem;
+  border-radius: 12px;
+  z-index: 10;
+  width: 80%;
+  max-width: 320px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+.private-journal-overlay .lock-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.private-journal-overlay h3 {
+  font-family: 'Caveat', cursive;
+  font-size: 1.8rem;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+}
+
+.private-journal-overlay p {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Scrapbook Decorative Stickers */
+.journal-sticker {
+  position: absolute;
+  font-size: 1.6rem;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0.75;
+  user-select: none;
+  filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.1));
+}
+
+.sticker-flower-top-left {
+  top: 1rem;
+  left: 1.5rem;
+  transform: rotate(-15deg);
+}
+
+.sticker-star-right {
+  top: 5rem;
+  right: 2.2rem;
+  transform: rotate(20deg);
+}
+
+.sticker-leaf-bottom-right {
+  bottom: 2rem;
+  right: 1.8rem;
+  transform: rotate(-10deg);
+}
+
+/* Animations */
+@keyframes flipPage {
+  0% { transform: rotateY(0deg) scale(1); opacity: 1; }
+  50% { transform: rotateY(-3deg) scale(0.98); opacity: 0.8; }
+  100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+}
+
+.page-turn {
+  animation: flipPage 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.save-success-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.save-success-badge {
+  background: var(--bg);
+  border: 1px solid #10b981;
+  border-radius: 20px;
+  padding: 1.25rem 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: badgeScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.save-success-badge .check-icon {
+  background: #10b981;
+  color: #081120;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.save-success-badge span:last-child {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+@keyframes badgeScaleIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Prompt and Font Selection styles */
+.font-family-select,
+.prompt-insert-select {
+  height: 28px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.theme-light .font-family-select,
+.theme-light .prompt-insert-select {
+  background: #fff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.font-family-select option,
+.prompt-insert-select option {
+  background: #1e293b;
+  color: #fff;
+}
+
+.theme-light .font-family-select option,
+.theme-light .prompt-insert-select option {
+  background: #fff;
+  color: #0f172a;
+}
+
+.prompt-insert-select {
+  max-width: 320px;
+  width: auto;
+  text-overflow: ellipsis;
+}
+
+.streak-badge-flame {
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  color: #f97316;
+}
+
+/* Checklist Subtask styles */
+.task-subtasks-section {
+  margin-top: 0.65rem;
+  padding-left: 2.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+  border-top: 1px dashed var(--line);
+  padding-top: 0.65rem;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  opacity: 0.95;
+  transition: opacity 0.2s ease;
+}
+
+.subtask-item-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  flex: 1;
+}
+
+.subtask-label-text {
+  color: var(--text);
+  transition: opacity 0.2s, text-decoration 0.2s;
+  font-weight: 500;
+}
+
+.subtask-item-checked .subtask-label-text {
+  text-decoration: line-through;
+  opacity: 0.55;
+  color: var(--muted);
+}
+
+.subtask-checkbox {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.subtask-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 1.1rem;
+  opacity: 0.4;
+  padding: 0 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+
+.subtask-delete-btn:hover {
+  opacity: 1;
+}
+
+.subtask-add-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+  width: 100%;
+}
+
+.subtask-add-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px dashed var(--line);
+  color: var(--text);
+  font-size: 0.82rem;
+  padding: 0.15rem 0;
+  outline: none;
+  width: 100%;
+  max-width: 180px;
+  transition: border-color 0.2s;
+}
+
+.subtask-add-input:focus {
+  border-bottom-color: var(--accent);
+}
+
+.subtask-add-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: bold;
+  padding: 0.1rem 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure task item height accommodates subtask list nicely */
+.task-item {
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+}
+
+

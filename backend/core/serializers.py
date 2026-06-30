@@ -48,7 +48,7 @@ class ContestEventSerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ('id', 'name', 'order', 'is_active', 'created_at', 'priority', 'is_recurring')
+        fields = ('id', 'name', 'order', 'is_active', 'created_at', 'priority', 'is_recurring', 'subtasks')
         read_only_fields = ('id', 'is_active', 'created_at')
 
 
@@ -70,7 +70,7 @@ class DailyLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DailyLog
-        fields = ('id', 'date', 'completed_task_ids', 'completion_percentage', 'journal_entry', 'is_frozen')
+        fields = ('id', 'date', 'completed_task_ids', 'completion_percentage', 'journal_entry', 'is_frozen', 'metadata')
         read_only_fields = ('id', 'completion_percentage')
 
     def __init__(self, *args, **kwargs):

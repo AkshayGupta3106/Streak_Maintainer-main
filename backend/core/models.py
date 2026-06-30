@@ -10,6 +10,7 @@ class Task(models.Model):
 	created_at = models.DateTimeField(auto_now_add=True)
 	priority = models.CharField(max_length=10, choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')], default='medium')
 	is_recurring = models.BooleanField(default=False)
+	subtasks = models.JSONField(default=list, blank=True)
 
 	class Meta:
 		ordering = ['order', 'created_at', 'id']
@@ -24,8 +25,10 @@ class DailyLog(models.Model):
 	completed_tasks = models.ManyToManyField(Task, blank=True, related_name='daily_logs')
 	journal_entry = models.TextField(blank=True, default='')
 	is_frozen = models.BooleanField(default=False)
+	metadata = models.JSONField(default=dict, blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
+
 
 	class Meta:
 		unique_together = ('user', 'date')

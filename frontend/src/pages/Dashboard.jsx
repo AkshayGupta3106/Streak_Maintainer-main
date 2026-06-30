@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { getTodayLog, updateTodayLog } from '../api/logs';
 import { getUpcomingContests, getCodingProfileStats, getDailyQuote } from '../api/profiles';
-import { getTasks, deleteTask } from '../api/tasks';
+import { getTasks, deleteTask, updateTask } from '../api/tasks';
 import CodingProfilesModal from '../components/CodingProfilesModal';
 import HistoryModal from '../components/HistoryModal';
 import ManageTasksModal from '../components/ManageTasksModal';
@@ -364,6 +364,16 @@ export default function Dashboard() {
     });
   };
 
+  const handleUpdateSubtasks = async (taskId, nextSubtasks) => {
+    try {
+      const updated = await updateTask(taskId, { subtasks: nextSubtasks });
+      setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
+    } catch (err) {
+      console.error("Failed to update task subtasks:", err);
+      setError("Failed to update subtasks, please try again.");
+    }
+  };
+
   const handleDeleteTask = async (taskId) => {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
     try {
@@ -707,6 +717,7 @@ export default function Dashboard() {
                     checked={completedTaskIds.includes(task.id)}
                     onToggle={toggleTask}
                     onDelete={handleDeleteTask}
+                    onUpdateSubtasks={handleUpdateSubtasks}
                     dragHandleProps={{
                       onMouseDown: () => setCanDrag(true),
                       onMouseUp: () => setCanDrag(false),

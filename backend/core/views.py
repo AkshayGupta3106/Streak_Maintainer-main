@@ -374,19 +374,20 @@ def _set_completed_tasks(log, request):
     log.completed_tasks.set(completed_tasks)
     log.save()
 
-
 def _update_log_details(log, request):
     from django.utils import timezone
     today = timezone.localdate()
     if log.date != today:
-        if 'completed_task_ids' in request.data or 'journal_entry' in request.data or 'is_frozen' in request.data:
+        if 'completed_task_ids' in request.data or 'journal_entry' in request.data or 'is_frozen' in request.data or 'metadata' in request.data:
             raise ValueError("Edits are only allowed for today's log.")
 
     _set_completed_tasks(log, request)
 
     if 'journal_entry' in request.data:
         log.journal_entry = request.data['journal_entry']
-        log.save()
+    if 'metadata' in request.data:
+        log.metadata = request.data['metadata']
+    log.save()
 
 
 class TodayLogView(APIView):

@@ -1,11 +1,20 @@
-.venv/
-__pycache__/
-*.pyc
-db.sqlite3
-streak-frontend/node_modules/
-streak-frontend/build/
-.env.example
-.env
-venv/
+# Backend ignored files
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/**/*.pyc
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.sqlite3-journal
+backend/.env
+backend/.env.example
+
+# Frontend ignored files
+frontend/node_modules/
+frontend/build/
+frontend/.env
+# IDE/System ignored files
 .idea/
-.DS_Store   
+.DS_Store
+.vscode

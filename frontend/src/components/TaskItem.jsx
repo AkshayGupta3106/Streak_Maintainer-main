@@ -1,0 +1,68 @@
+export default function TaskItem({ task, checked, onToggle, readOnly, dragHandleProps, onDelete }) {
+  const priority = task.priority || 'medium';
+  return (
+    <div 
+      className={`task-item ${checked ? 'task-item-checked' : ''} priority-border-${priority}`} 
+      style={readOnly ? { cursor: 'default' } : undefined}
+    >
+      <label style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', flex: 1, cursor: readOnly ? 'default' : 'pointer', margin: 0 }}>
+        <span className="task-item-check">
+          <input
+            type="checkbox"
+            checked={checked}
+            disabled={readOnly}
+            onChange={(event) => !readOnly && onToggle?.(task.id, event.target.checked)}
+          />
+        </span>
+        <span className="task-item-label">
+          <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            {task.name}
+            {task.is_recurring && <span title="Recurring daily task" style={{ fontSize: '0.85rem', cursor: 'help' }}>🔁</span>}
+          </strong>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span className={`priority-dot priority-dot-${priority}`} title={`${priority} priority`} />
+            <span style={{ fontSize: '0.8rem', fontWeight: '700', opacity: 0.8 }}>{task.displayCode}</span>
+          </span>
+        </span>
+      </label>
+      
+      {!readOnly && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {onDelete && (
+            <button 
+              type="button" 
+              className="delete-task-btn" 
+              title="Delete Task" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete(task.id);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--danger)',
+                cursor: 'pointer',
+                fontSize: '1.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.2rem',
+                opacity: 0.6,
+                transition: 'opacity 0.15s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = 0.6}
+            >
+              ×
+            </button>
+          )}
+          <div className="drag-handle" title="Drag to reorder" {...dragHandleProps}>
+            <span className="drag-line"></span>
+            <span className="drag-line"></span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

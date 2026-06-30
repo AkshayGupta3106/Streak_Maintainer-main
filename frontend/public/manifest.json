@@ -1,0 +1,25 @@
+{
+  "short_name": "Eyes on Streak",
+  "name": "Eyes on Streak",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "400x400",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

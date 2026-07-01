@@ -13,8 +13,19 @@ from groq import Groq
 
 logger = logging.getLogger(__name__)
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
+gemini_key = os.environ.get("GEMINI_API_KEY")
+groq_key = os.environ.get("GROQ_API_KEY")
+
+if gemini_key:
+    genai.configure(api_key=gemini_key)
+else:
+    logger.warning("GEMINI_API_KEY is not set in environment variables.")
+
+groq_client = None
+if groq_key:
+    groq_client = Groq(api_key=groq_key)
+else:
+    logger.warning("GROQ_API_KEY is not set in environment variables.")
 
 SYSTEM_PROMPT = """You are a FAANG+ technical interviewer. Generate exactly 10 interview
 questions for AI Engineer / Data Science roles, mixing:
@@ -78,15 +89,21 @@ def generate_questions(context_text: str) -> tuple[list[dict], str]:
     Tries Gemini first, falls back to Groq on failure.
     Returns (questions, provider_used).
     """
-    try:
-        questions = generate_with_gemini(context_text)
-        return questions, "gemini"
-    except Exception as e:
-        logger.warning(f"Gemini generation failed, falling back to Groq: {e}")
+    if gemini_key:
+        try:
+            questions = generate_with_gemini(context_text)
+            return questions, "gemini"
+        except Exception as e:
+            logger.warning(f"Gemini generation failed, falling back to Groq: {e}")
+    else:
+        logger.warning("Gemini generation skipped because GEMINI_API_KEY is not set.")
 
-    try:
-        questions = generate_with_groq(context_text)
-        return questions, "groq"
-    except Exception as e:
-        logger.error(f"Groq fallback also failed: {e}")
-        raise RuntimeError("Both Gemini and Groq generation failed") from e
+    if groq_client:
+        try:
+            questions = generate_with_groq(context_text)
+            return questions, "groq"
+        except Exception as e:
+            logger.error(f"Groq fallback also failed: {e}")
+            raise RuntimeError("Both Gemini and Groq generation failed") from e
+    else:
+        raise RuntimeError("No LLM API keys configured (both GEMINI_API_KEY and GROQ_API_KEY are missing)")

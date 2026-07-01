@@ -13,8 +13,16 @@ SIMILARITY_THRESHOLD = 0.85
 
 
 def embed_text(text: str) -> list[float]:
-    result = genai.embed_content(model="models/embedding-001", content=text)
-    return result["embedding"]
+    import os
+    if not os.environ.get("GEMINI_API_KEY"):
+        return None
+    try:
+        result = genai.embed_content(model="models/embedding-001", content=text)
+        return result["embedding"]
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to embed text: {e}")
+        return None
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
@@ -27,6 +35,8 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 
 def is_duplicate(new_embedding: list[float], lookback_days: int = 30) -> bool:
+    if not new_embedding:
+        return False
     cutoff = timezone.now().date() - timedelta(days=lookback_days)
     recent = DailyInterviewQuestion.objects.filter(
         date_generated__gte=cutoff, embedding__isnull=False

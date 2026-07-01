@@ -12,6 +12,9 @@ import DailyJournalModal from '../components/DailyJournalModal';
 import { useAuth } from '../context/AuthContext';
 import { formatStreakDate } from '../utils/dateFormatter';
 import { triggerConfetti } from '../utils/confetti';
+import HiringTrackerDashboard from '../components/HiringTrackerDashboard';
+import HiringCalendar from '../components/HiringCalendar';
+import HiringAnalytics from '../components/HiringAnalytics';
 
 const PHASE_DATA = {
   morning: {
@@ -135,6 +138,7 @@ export default function Dashboard() {
   const [accentColor, setAccentColor] = useState(() => localStorage.getItem('streak_accent') || 'emerald');
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [displayTasks, setDisplayTasks] = useState([]);
+  const [activeTab, setActiveTab] = useState('checklist');
 
   // Custom task ordering & daily quotes & dragging
   const [customOrderIds, setCustomOrderIds] = useState(() => {
@@ -594,255 +598,297 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="dashboard-shell">
-        <section className="hero-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-          <div>
-            <p className="eyebrow">{PHASE_DATA[activePhase].eyebrow}</p>
-            <h1>{PHASE_DATA[activePhase].title}</h1>
-            <p className="hero-panel__welcome">Good to see you, {user?.name || user?.username || 'Streak Tracker'}</p>
-            <p className="hero-panel__date">{formatToday()}</p>
-          </div>
-          
-          <div className="hero-streak-display">
-            <div className="streak-stat-box">
-              <span className="streak-label">Current Streak</span>
-              <span className="streak-value">{currentStreak}🔥</span>
-            </div>
-            <div className="streak-stat-box">
-              <span className="streak-label">Best Streak</span>
-              <span className="streak-value">{bestStreak}🔥</span>
-            </div>
-          </div>
-        </section>
+      <div className="dashboard-shell" style={{ maxWidth: '100%', padding: 0 }}>
+        <div className="dashboard-layout-container">
+          <aside className="dashboard-sub-sidebar">
+            <div className="sub-sidebar-title">Main Menu</div>
+            <button
+              className={`sub-sidebar-nav-btn ${activeTab === 'checklist' ? 'active' : ''}`}
+              onClick={() => setActiveTab('checklist')}
+            >
+              🎯 Daily Checklist
+            </button>
 
-        <section className="merged-activity-panel">
-          <div className="activity-left">
-            <div className="progress-ring-container">
-              <svg className="progress-ring" width="88" height="88">
-                <circle
-                  className="progress-ring__circle-bg"
-                  stroke="rgba(255,255,255,0.06)"
-                  strokeWidth="8"
-                  fill="transparent"
-                  r="34"
-                  cx="44"
-                  cy="44"
-                />
-                <circle
-                  className="progress-ring__circle"
-                  stroke="var(--accent)"
-                  strokeWidth="8"
-                  strokeDasharray="213.628"
-                  strokeDashoffset={213.628 - (completionPercentage / 100) * 213.628}
-                  strokeLinecap="round"
-                  fill="var(--accent)"
-                  fillOpacity={(completionPercentage / 100) * 0.12}
-                  r="34"
-                  cx="44"
-                  cy="44"
-                  style={{
-                    transition: 'stroke-dashoffset 0.6s ease-in-out, fill-opacity 0.6s ease-in-out',
-                    transform: 'rotate(-90deg)',
-                    transformOrigin: '50% 50%'
-                  }}
-                />
-              </svg>
-              <div className="progress-ring-text">{completionPercentage}%</div>
-            </div>
-            <div className="progress-stats">
-              <span className="eyebrow">Your Daily Progress</span>
-              <h2 style={{ margin: '0.15rem 0 0.35rem 0', fontSize: '1.4rem' }}>Today's Activity</h2>
-              <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
-                {completedVisibleCount} of {activeTasks.length} tasks complete
-              </p>
-            </div>
-          </div>
-          <div className="activity-divider" />
-          <div className="activity-right">
-            <blockquote className="daily-quote">
-              <p className="quote-text">“{dailyQuote.text}”</p>
-              <cite className="quote-author">— {dailyQuote.author}</cite>
-            </blockquote>
-          </div>
-        </section>
+            <div className="sub-sidebar-title" style={{ marginTop: '1.25rem' }}>Placement Tracker</div>
+            <button
+              className={`sub-sidebar-nav-btn ${activeTab === 'hiring_tracker' ? 'active' : ''}`}
+              onClick={() => setActiveTab('hiring_tracker')}
+            >
+              💼 Opportunities
+            </button>
+            <button
+              className={`sub-sidebar-nav-btn ${activeTab === 'hiring_calendar' ? 'active' : ''}`}
+              onClick={() => setActiveTab('hiring_calendar')}
+            >
+              📅 Calendar Grid
+            </button>
+            <button
+              className={`sub-sidebar-nav-btn ${activeTab === 'hiring_analytics' ? 'active' : ''}`}
+              onClick={() => setActiveTab('hiring_analytics')}
+            >
+              📊 Analytics Stats
+            </button>
+          </aside>
 
-        {error ? <div className="banner banner--error">{error}</div> : null}
-        {saving ? <div className="banner">Saving streak data...</div> : null}
-
-        <div className="split">
-          <section className="task-panel">
-            <div className="task-panel__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p className="eyebrow">Today's tasks</p>
-                <h2>Your checklist</h2>
-              </div>
-              <button 
-                type="button" 
-                className="secondary-button add-task-header-btn" 
-                onClick={() => setManageOpen(true)}
-                title="Manage Tasks"
-                style={{ 
-                  width: '2.4rem', 
-                  height: '2.4rem', 
-                  borderRadius: '50%', 
-                  fontSize: '1.25rem', 
-                  display: 'grid', 
-                  placeItems: 'center', 
-                  padding: 0,
-                  fontWeight: 'normal'
-                }}
-              >
-                ＋
-              </button>
-            </div>
-
-            {loading ? <div className="loading-state">Loading dashboard...</div> : null}
-
-            {!loading && activeTasks.length === 0 ? (
-              <div className="empty-state">Add your first task of today to get started!</div>
-            ) : null}
-
-            <div className="task-list">
-              {displayTasks.map((task, index) => (
-                <div
-                  key={task.id}
-                  draggable={canDrag}
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragEnd={handleDragEnd}
-                  className={`task-drag-wrapper ${draggedIndex === index ? 'is-dragging' : ''}`}
-                >
-                  <TaskItem
-                    task={task}
-                    checked={completedTaskIds.includes(task.id)}
-                    onToggle={toggleTask}
-                    onDelete={handleDeleteTask}
-                    onUpdateSubtasks={handleUpdateSubtasks}
-                    dragHandleProps={{
-                      onMouseDown: () => setCanDrag(true),
-                      onMouseUp: () => setCanDrag(false),
-                      onTouchStart: () => setCanDrag(true),
-                      onTouchEnd: () => setCanDrag(false)
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {/* Today's Journal & Freeze Widget */}
-            {/* Today's Journal Promo Card */}
-            <section className="task-panel">
-              <div className="task-panel__header">
-                <div>
-                  <p className="eyebrow">Personal reflections</p>
-                  <h2>Daily Journal</h2>
-                </div>
-              </div>
-              <div className="journal-promo-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.25rem 1.5rem', textAlign: 'center', background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--line)', borderRadius: '16px', marginTop: '1rem', gap: '0.85rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}>
-                  <span style={{ fontSize: '1.5rem', lineHeight: '1' }}>✍️</span>
-                  <p style={{ margin: 0, fontSize: '1.05rem', fontWeight: '500', color: 'var(--text)' }}>
-                    Want to journal your day? Go ahead
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => setJournalOpen(true)}
-                  style={{ width: '100%', maxWidth: '200px', padding: '0.6rem 1.5rem', borderRadius: '12px' }}
-                >
-                  Enter
-                </button>
-              </div>
-            </section>
-            {/* Platform Stats Section */}
-            {profileStats && (profileStats.leetcode || profileStats.codeforces) ? (
-              <section className="task-panel">
-                <div className="task-panel__header">
+          <main className="dashboard-main-content" style={{ flex: 1, minWidth: 0 }}>
+            {activeTab === 'checklist' && (
+              <>
+                <section className="hero-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
                   <div>
-                    <p className="eyebrow">Platform Stats</p>
-                    <h2>Solved Problems</h2>
+                    <p className="eyebrow">{PHASE_DATA[activePhase].eyebrow}</p>
+                    <h1>{PHASE_DATA[activePhase].title}</h1>
+                    <p className="hero-panel__welcome">Good to see you, {user?.name || user?.username || 'Streak Tracker'}</p>
+                    <p className="hero-panel__date">{formatToday()}</p>
+                  </div>
+                  
+                  <div className="hero-streak-display">
+                    <div className="streak-stat-box">
+                      <span className="streak-label">Current Streak</span>
+                      <span className="streak-value">{currentStreak}🔥</span>
+                    </div>
+                    <div className="streak-stat-box">
+                      <span className="streak-label">Best Streak</span>
+                      <span className="streak-value">{bestStreak}🔥</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="merged-activity-panel">
+                  <div className="activity-left">
+                    <div className="progress-ring-container">
+                      <svg className="progress-ring" width="88" height="88">
+                        <circle
+                          className="progress-ring__circle-bg"
+                          stroke="rgba(255,255,255,0.06)"
+                          strokeWidth="8"
+                          fill="transparent"
+                          r="34"
+                          cx="44"
+                          cy="44"
+                        />
+                        <circle
+                          className="progress-ring__circle"
+                          stroke="var(--accent)"
+                          strokeWidth="8"
+                          strokeDasharray="213.628"
+                          strokeDashoffset={213.628 - (completionPercentage / 100) * 213.628}
+                          strokeLinecap="round"
+                          fill="var(--accent)"
+                          fillOpacity={(completionPercentage / 100) * 0.12}
+                          r="34"
+                          cx="44"
+                          cy="44"
+                          style={{
+                            transition: 'stroke-dashoffset 0.6s ease-in-out, fill-opacity 0.6s ease-in-out',
+                            transform: 'rotate(-90deg)',
+                            transformOrigin: '50% 50%'
+                          }}
+                        />
+                      </svg>
+                      <div className="progress-ring-text">{completionPercentage}%</div>
+                    </div>
+                    <div className="progress-stats">
+                      <span className="eyebrow">Your Daily Progress</span>
+                      <h2 style={{ margin: '0.15rem 0 0.35rem 0', fontSize: '1.4rem' }}>Today's Activity</h2>
+                      <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
+                        {completedVisibleCount} of {activeTasks.length} tasks complete
+                      </p>
+                    </div>
+                  </div>
+                  <div className="activity-divider" />
+                  <div className="activity-right">
+                    <blockquote className="daily-quote">
+                      <p className="quote-text">“{dailyQuote.text}”</p>
+                      <cite className="quote-author">— {dailyQuote.author}</cite>
+                    </blockquote>
+                  </div>
+                </section>
+
+                {error ? <div className="banner banner--error">{error}</div> : null}
+                {saving ? <div className="banner">Saving streak data...</div> : null}
+
+                <div className="split">
+                  <section className="task-panel">
+                    <div className="task-panel__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <p className="eyebrow">Today's tasks</p>
+                        <h2>Your checklist</h2>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="secondary-button add-task-header-btn" 
+                        onClick={() => setManageOpen(true)}
+                        title="Manage Tasks"
+                        style={{ 
+                          width: '2.4rem', 
+                          height: '2.4rem', 
+                          borderRadius: '50%', 
+                          fontSize: '1.25rem', 
+                          display: 'grid', 
+                          placeItems: 'center', 
+                          padding: 0,
+                          fontWeight: 'normal'
+                        }}
+                      >
+                        ＋
+                      </button>
+                    </div>
+
+                    {loading ? <div className="loading-state">Loading dashboard...</div> : null}
+
+                    {!loading && activeTasks.length === 0 ? (
+                      <div className="empty-state">Add your first task of today to get started!</div>
+                    ) : null}
+
+                    <div className="task-list">
+                      {displayTasks.map((task, index) => (
+                        <div
+                          key={task.id}
+                          draggable={canDrag}
+                          onDragStart={(e) => handleDragStart(e, index)}
+                          onDragOver={(e) => handleDragOver(e, index)}
+                          onDragEnd={handleDragEnd}
+                          className={`task-drag-wrapper ${draggedIndex === index ? 'is-dragging' : ''}`}
+                        >
+                          <TaskItem
+                            task={task}
+                            checked={completedTaskIds.includes(task.id)}
+                            onToggle={toggleTask}
+                            onDelete={handleDeleteTask}
+                            onUpdateSubtasks={handleUpdateSubtasks}
+                            dragHandleProps={{
+                              onMouseDown: () => setCanDrag(true),
+                              onMouseUp: () => setCanDrag(false),
+                              onTouchStart: () => setCanDrag(true),
+                              onTouchEnd: () => setCanDrag(false)
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    {/* Today's Journal Promo Card */}
+                    <section className="task-panel">
+                      <div className="task-panel__header">
+                        <div>
+                          <p className="eyebrow">Personal reflections</p>
+                          <h2>Daily Journal</h2>
+                        </div>
+                      </div>
+                      <div className="journal-promo-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.25rem 1.5rem', textAlign: 'center', background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--line)', borderRadius: '16px', marginTop: '1rem', gap: '0.85rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}>
+                          <span style={{ fontSize: '1.5rem', lineHeight: '1' }}>✍️</span>
+                          <p style={{ margin: 0, fontSize: '1.05rem', fontWeight: '500', color: 'var(--text)' }}>
+                            Want to journal your day? Go ahead
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={() => setJournalOpen(true)}
+                          style={{ width: '100%', maxWidth: '200px', padding: '0.6rem 1.5rem', borderRadius: '12px' }}
+                        >
+                          Enter
+                        </button>
+                      </div>
+                    </section>
+                    
+                    {/* Platform Stats Section */}
+                    {profileStats && (profileStats.leetcode || profileStats.codeforces) ? (
+                      <section className="task-panel">
+                        <div className="task-panel__header">
+                          <div>
+                            <p className="eyebrow">Platform Stats</p>
+                            <h2>Solved Problems</h2>
+                          </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem', marginTop: '1rem' }}>
+                          {profileStats.leetcode && (
+                            <div className="task-item" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1rem', background: 'rgba(255,255,255,0.02)', gap: '0.6rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <strong style={{ color: '#FFA116' }}>LeetCode</strong>
+                                <strong style={{ fontSize: '1.25rem' }}>{profileStats.leetcode.all || 0}</strong>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.3rem', textAlign: 'center', fontSize: '0.75rem' }}>
+                                <div style={{ background: 'rgba(0,184,163,0.08)', color: '#00B8A3', padding: '0.3rem 0.15rem', borderRadius: '8px' }}>
+                                  <div>Easy</div>
+                                  <strong>{profileStats.leetcode.easy || 0}</strong>
+                                </div>
+                                <div style={{ background: 'rgba(255,192,30,0.08)', color: '#FFC01E', padding: '0.3rem 0.15rem', borderRadius: '8px' }}>
+                                  <div>Med</div>
+                                  <strong>{profileStats.leetcode.medium || 0}</strong>
+                                </div>
+                                <div style={{ background: 'rgba(239,71,111,0.08)', color: '#EF476F', padding: '0.3rem 0.15rem', borderRadius: '8px' }}>
+                                  <div>Hard</div>
+                                  <strong>{profileStats.leetcode.hard || 0}</strong>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {profileStats.codeforces && (
+                            <div className="task-item" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1rem', background: 'rgba(255,255,255,0.02)', justifyContent: 'center', gap: '0.6rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <strong style={{ color: '#3B5998' }}>Codeforces</strong>
+                                <strong style={{ fontSize: '1.25rem' }}>{profileStats.codeforces.all || 0}</strong>
+                              </div>
+                              <span className="muted" style={{ fontSize: '0.75rem' }}>Unique problems solved</span>
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    ) : null}
+
+                    {/* Upcoming Contests Section */}
+                    <section className="task-panel" style={{ flex: 1 }}>
+                      <div className="task-panel__header">
+                        <div>
+                          <p className="eyebrow">Competitive Programming</p>
+                          <h2>Upcoming Contests</h2>
+                        </div>
+                      </div>
+
+                      {loadingContests ? <div className="loading-state">Loading contests...</div> : null}
+
+                      {!loadingContests && contests.length === 0 ? (
+                        <div className="empty-state">
+                          No upcoming contests. Connect your coding profiles to sync upcoming events!
+                        </div>
+                      ) : null}
+
+                      <div className="task-list">
+                        {contests.slice(0, 10).map((contest) => {
+                          const datePart = formatStreakDate(contest.start_time);
+                          const timePart = new Date(contest.start_time).toLocaleTimeString(undefined, {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                          });
+                          const start = `${datePart}, ${timePart}`;
+                          return (
+                            <div key={contest.id} className="task-item" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div className="task-item-label">
+                                <strong>{contest.title}</strong>
+                                <span style={{ fontSize: '0.8rem' }}>{contest.source_name} • {start} • {contest.duration_minutes} mins</span>
+                              </div>
+                              <a href={contest.url} target="_blank" rel="noopener noreferrer" className="secondary-button" style={{ textDecoration: 'none', padding: '0.4rem 0.8rem', borderRadius: '10px', fontSize: '0.85rem' }}>
+                                View
+                              </a>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem', marginTop: '1rem' }}>
-                  {profileStats.leetcode && (
-                    <div className="task-item" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1rem', background: 'rgba(255,255,255,0.02)', gap: '0.6rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong style={{ color: '#FFA116' }}>LeetCode</strong>
-                        <strong style={{ fontSize: '1.25rem' }}>{profileStats.leetcode.all || 0}</strong>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.3rem', textAlign: 'center', fontSize: '0.75rem' }}>
-                        <div style={{ background: 'rgba(0,184,163,0.08)', color: '#00B8A3', padding: '0.3rem 0.15rem', borderRadius: '8px' }}>
-                          <div>Easy</div>
-                          <strong>{profileStats.leetcode.easy || 0}</strong>
-                        </div>
-                        <div style={{ background: 'rgba(255,192,30,0.08)', color: '#FFC01E', padding: '0.3rem 0.15rem', borderRadius: '8px' }}>
-                          <div>Med</div>
-                          <strong>{profileStats.leetcode.medium || 0}</strong>
-                        </div>
-                        <div style={{ background: 'rgba(239,71,111,0.08)', color: '#EF476F', padding: '0.3rem 0.15rem', borderRadius: '8px' }}>
-                          <div>Hard</div>
-                          <strong>{profileStats.leetcode.hard || 0}</strong>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {profileStats.codeforces && (
-                    <div className="task-item" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1rem', background: 'rgba(255,255,255,0.02)', justifyContent: 'center', gap: '0.6rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong style={{ color: '#3B5998' }}>Codeforces</strong>
-                        <strong style={{ fontSize: '1.25rem' }}>{profileStats.codeforces.all || 0}</strong>
-                      </div>
-                      <span className="muted" style={{ fontSize: '0.75rem' }}>Unique problems solved</span>
-                    </div>
-                  )}
-                </div>
-              </section>
-            ) : null}
+              </>
+            )}
 
-            {/* Upcoming Contests Section */}
-            <section className="task-panel" style={{ flex: 1 }}>
-              <div className="task-panel__header">
-                <div>
-                  <p className="eyebrow">Competitive Programming</p>
-                  <h2>Upcoming Contests</h2>
-                </div>
-              </div>
-
-              {loadingContests ? <div className="loading-state">Loading contests...</div> : null}
-
-              {!loadingContests && contests.length === 0 ? (
-                <div className="empty-state">
-                  No upcoming contests. Connect your coding profiles to sync upcoming events!
-                </div>
-              ) : null}
-
-              <div className="task-list">
-                {contests.slice(0, 10).map((contest) => {
-                  const datePart = formatStreakDate(contest.start_time);
-                  const timePart = new Date(contest.start_time).toLocaleTimeString(undefined, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                  });
-                  const start = `${datePart}, ${timePart}`;
-                  return (
-                    <div key={contest.id} className="task-item" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div className="task-item-label">
-                        <strong>{contest.title}</strong>
-                        <span style={{ fontSize: '0.8rem' }}>{contest.source_name} • {start} • {contest.duration_minutes} mins</span>
-                      </div>
-                      <a href={contest.url} target="_blank" rel="noopener noreferrer" className="secondary-button" style={{ textDecoration: 'none', padding: '0.4rem 0.8rem', borderRadius: '10px', fontSize: '0.85rem' }}>
-                        View
-                      </a>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          </div>
+            {activeTab === 'hiring_tracker' && <HiringTrackerDashboard />}
+            {activeTab === 'hiring_calendar' && <HiringCalendar />}
+            {activeTab === 'hiring_analytics' && <HiringAnalytics />}
+          </main>
         </div>
       </div>
 

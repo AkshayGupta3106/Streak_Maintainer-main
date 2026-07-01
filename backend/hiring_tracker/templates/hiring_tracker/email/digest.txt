@@ -1,0 +1,37 @@
+Off-Campus Hiring Digest
+========================
+{{ today|date:"l, d F Y" }}
+
+{% if opening_7 %}
+Opening within 7 days:
+{% for opp in opening_7 %}
+- {{ opp.company.name }} — {{ opp.role }} ({{ opp.get_opportunity_type_display }})
+  Hiring Window: {{ opp.expected_hiring_window_start|date:"d M Y" }}
+  Days Left: {{ opp.days_until_hiring }}
+  Link: {{ opp.career_portal_link }}
+{% endfor %}
+{% endif %}
+
+{% if opening_14 %}
+Opening in 8-14 days:
+{% for opp in opening_14 %}
+- {{ opp.company.name }} — {{ opp.role }} ({{ opp.get_opportunity_type_display }})
+  Hiring Window: {{ opp.expected_hiring_window_start|date:"d M Y" }}
+  Days Left: {{ opp.days_until_hiring }}
+  Link: {{ opp.career_portal_link }}
+{% endfor %}
+{% endif %}
+
+{% if opening_30 %}
+Opening in 15-30 days:
+{% for opp in opening_30 %}
+- {{ opp.company.name }} — {{ opp.role }} ({{ opp.get_opportunity_type_display }})
+  Hiring Window: {{ opp.expected_hiring_window_start|date:"d M Y" }}
+  Days Left: {{ opp.days_until_hiring }}
+  Link: {{ opp.career_portal_link }}
+{% endfor %}
+{% endif %}
+
+{% if not opening_7 and not opening_14 and not opening_30 %}
+No opportunities opening in the next 30 days. Check your dashboard.
+{% endif %}

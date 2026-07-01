@@ -49,7 +49,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'django_filters',
     'core',
+    'hiring_tracker',
 ]
 
 MIDDLEWARE = [
@@ -170,6 +172,11 @@ GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
 GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='')
 FRONTEND_APP_URL = env('FRONTEND_APP_URL', default='http://localhost:3000')
+
+HIRING_TRACKER = {
+    "DIGEST_RECIPIENT": "recipient@local.com",
+    "DIGEST_FROM": "hiring-tracker@local.com",
+}
 
 
 

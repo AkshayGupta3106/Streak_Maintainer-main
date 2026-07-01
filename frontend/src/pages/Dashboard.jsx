@@ -15,6 +15,7 @@ import { triggerConfetti } from '../utils/confetti';
 import HiringTrackerDashboard from '../components/HiringTrackerDashboard';
 import HiringCalendar from '../components/HiringCalendar';
 import HiringAnalytics from '../components/HiringAnalytics';
+import DailyInterviewQuestions from '../components/DailyInterviewQuestions';
 
 const PHASE_DATA = {
   morning: {
@@ -628,6 +629,12 @@ export default function Dashboard() {
             >
               📊 Analytics Stats
             </button>
+            <button
+              className={`sub-sidebar-nav-btn ${activeTab === 'interview_prep' ? 'active' : ''}`}
+              onClick={() => setActiveTab('interview_prep')}
+            >
+              🧠 Interview Prep
+            </button>
           </aside>
 
           <main className="dashboard-main-content" style={{ flex: 1, minWidth: 0 }}>
@@ -888,6 +895,7 @@ export default function Dashboard() {
             {activeTab === 'hiring_tracker' && <HiringTrackerDashboard />}
             {activeTab === 'hiring_calendar' && <HiringCalendar />}
             {activeTab === 'hiring_analytics' && <HiringAnalytics />}
+            {activeTab === 'interview_prep' && <DailyInterviewQuestions />}
           </main>
         </div>
       </div>

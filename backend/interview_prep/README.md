@@ -4,6 +4,11 @@ Django app that generates 10 fresh AI Engineer / Data Science interview
 questions daily, with structured model answers, using free-tier LLM APIs
 (Gemini primary, Groq fallback) and DuckDuckGo search for freshness context.
 
+Grounding strategy: query templates explicitly target sources such as
+Glassdoor, Reddit (including r/MachineLearning), LeetCode Discuss, and
+company-specific interview posts, then rank snippets by source quality and
+recency signals before passing context to the LLM.
+
 ## Setup
 
 1. Copy this `interview_prep/` folder into your Django project root

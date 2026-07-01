@@ -8,6 +8,6 @@ class DailyInterviewQuestionSerializer(serializers.ModelSerializer):
         fields = [
             "id", "question", "category", "difficulty", "company_style",
             "model_answer", "follow_up_questions", "date_generated",
-            "times_shown", "user_rating",
+            "times_shown", "user_rating", "source_context",
         ]
         read_only_fields = ["id", "date_generated"]

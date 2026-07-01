@@ -8,11 +8,37 @@ import {
   deleteOpportunity
 } from '../api/hiring';
 
+const SCRAPER_SOURCES = [
+  'internshala',
+  'unstop_search',
+  'superset_search',
+  'cutshort_search',
+  'instahyre_search',
+  'hirist_search',
+  'naukri_search',
+  'foundit_search',
+  'aicte_internship_portal_search',
+  'analytics_vidhya_jobs_search',
+  'nvidia_india_careers_search',
+  'microsoft_india_careers_search',
+  'google_careers_search',
+  'atlassian_careers_search',
+  'oracle_careers_search',
+  'adobe_careers_search',
+  'samsung_research_india_careers_search',
+  'flipkart_careers_search',
+  'phonepe_careers_search'
+];
+
 export default function HiringTrackerDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scraping, setScraping] = useState(false);
+  const [scrapeStartedAt, setScrapeStartedAt] = useState(null);
+  const [scrapeElapsedSeconds, setScrapeElapsedSeconds] = useState(0);
+  const [scrapeLastDurationSeconds, setScrapeLastDurationSeconds] = useState(0);
+  const [scrapeMessage, setScrapeMessage] = useState('');
   const [scrapeResult, setScrapeResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -46,7 +72,18 @@ export default function HiringTrackerDashboard() {
       setError(null);
     } catch (err) {
       console.error(err);
-      setError('Failed to fetch opportunity data. Please ensure the backend is running.');
+      const status = err?.response?.status;
+      const errorCode = err?.code;
+
+      if (status === 401) {
+        setError('Session expired. Please log in again.');
+      } else if (status === 403) {
+        setError('You do not have permission to view this data.');
+      } else if (!status || errorCode === 'ERR_NETWORK') {
+        setError('Cannot connect to backend API. Start backend server at http://127.0.0.1:8000 and retry.');
+      } else {
+        setError(`Failed to fetch opportunity data (HTTP ${status}). Please retry.`);
+      }
     } finally {
       setLoading(false);
     }
@@ -56,19 +93,71 @@ export default function HiringTrackerDashboard() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (!scraping || !scrapeStartedAt) return undefined;
+
+    const tick = () => {
+      const diffMs = Date.now() - scrapeStartedAt;
+      setScrapeElapsedSeconds(Math.max(0, Math.floor(diffMs / 1000)));
+    };
+
+    tick();
+    const timerId = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timerId);
+  }, [scraping, scrapeStartedAt]);
+
+  const formatElapsed = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  };
+
   const handleScrape = async () => {
+    const runStartedAt = Date.now();
+    const combinedResults = {};
     try {
       setScraping(true);
+      setScrapeStartedAt(runStartedAt);
+      setScrapeElapsedSeconds(0);
+      setScrapeMessage('Starting scrapers and syncing opportunities...');
       setScrapeResult(null);
-      // Run only internshala for now
-      const res = await triggerScrape(['internshala']);
-      setScrapeResult(res.results);
+
+      for (let i = 0; i < SCRAPER_SOURCES.length; i += 1) {
+        const source = SCRAPER_SOURCES[i];
+        setScrapeMessage(`Running source ${i + 1}/${SCRAPER_SOURCES.length}: ${source}`);
+
+        try {
+          const res = await triggerScrape([source]);
+          const sourceResult = res?.results?.[source] || {
+            status: 'ok',
+            seen: 0,
+            created: 0,
+            updated: 0
+          };
+          combinedResults[source] = sourceResult;
+        } catch (sourceErr) {
+          combinedResults[source] = {
+            status: 'error',
+            error: sourceErr?.response?.data?.error || sourceErr?.message || 'Request failed',
+          };
+        }
+
+        setScrapeResult({ ...combinedResults });
+        await fetchData();
+      }
+
+      setScrapeMessage('Scrape finished. Refreshing dashboard buckets...');
       await fetchData();
+      setScrapeMessage('Scrape completed successfully.');
     } catch (err) {
       console.error(err);
+      setScrapeMessage('Scrape failed. Please try again.');
       alert('Scraper failed to run.');
     } finally {
       setScraping(false);
+      setScrapeLastDurationSeconds(Math.max(0, Math.floor((Date.now() - runStartedAt) / 1000)));
+      setScrapeStartedAt(null);
+      setScrapeElapsedSeconds(0);
     }
   };
 
@@ -307,19 +396,33 @@ export default function HiringTrackerDashboard() {
           <div>
             <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>Scrape & Sync Engine</h4>
             <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.8rem', color: 'var(--muted)' }}>
-              Automatically pull computer science internships and jobs from Internshala portals.
+              Pulls roles from all configured portals and company career pages. This may take a minute due retry/backoff.
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {scraping ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-              <span className="saving-indicator" style={{ display: 'inline-block' }}></span>
-              <span>Running scrapers (courtesy delay enforced)...</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: '280px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                <span className="saving-indicator" style={{ display: 'inline-block' }}></span>
+                <span>Running scrapers... elapsed {formatElapsed(scrapeElapsedSeconds)}</span>
+              </div>
+              <div style={{ height: '6px', borderRadius: '999px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    width: `${20 + (scrapeElapsedSeconds % 6) * 12}%`,
+                    height: '100%',
+                    borderRadius: '999px',
+                    background: 'linear-gradient(90deg, #10b981, #34d399)',
+                    transition: 'width 0.7s ease',
+                  }}
+                />
+              </div>
+              <span style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>{scrapeMessage || 'Querying sources and deduplicating results...'}</span>
             </div>
           ) : (
-            <button className="opp-portal-btn" onClick={handleScrape} style={{ background: '#10b981', color: '#09150b' }}>
+            <button className="opp-portal-btn" onClick={handleScrape} style={{ background: '#10b981', color: '#09150b' }} disabled={scraping}>
               ⚡ Trigger Auto-Scrapers
             </button>
           )}
@@ -328,6 +431,7 @@ export default function HiringTrackerDashboard() {
         {scrapeResult && (
           <div style={{ width: '100%', marginTop: '0.75rem', padding: '0.75rem 1rem', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '10px', fontSize: '0.85rem' }}>
             <strong>Scrape Complete:</strong>
+            <div style={{ marginTop: '0.2rem', color: 'var(--muted)', fontSize: '0.78rem' }}>Elapsed: {formatElapsed(scrapeLastDurationSeconds)}</div>
             {Object.entries(scrapeResult).map(([source, details]) => (
               <div key={source} style={{ marginTop: '0.2rem' }}>
                 • <strong>{source}</strong>: {details.status === 'ok' ? `Processed ${details.seen} listings (created ${details.created}, updated ${details.updated})` : `Failed (${details.error})`}

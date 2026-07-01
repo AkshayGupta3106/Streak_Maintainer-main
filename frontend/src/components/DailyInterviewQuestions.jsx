@@ -16,6 +16,39 @@ const DIFFICULTY_LABELS = {
   hard: { label: 'Hard', color: 'danger' }
 };
 
+function parseSources(sourceContext) {
+  if (!sourceContext) return [];
+  const lines = sourceContext.split('\n');
+  const sources = [];
+  
+  lines.forEach(line => {
+    const urlMatch = line.match(/^-\s+(.+?)\s+\[URL:\s*(https?:\/\/[^\]]+)\]/i);
+    if (urlMatch) {
+      const title = urlMatch[1].trim();
+      const url = urlMatch[2].trim();
+      try {
+        const domain = new URL(url).hostname.replace('www.', '');
+        sources.push({ title, url, domain });
+      } catch {
+        sources.push({ title, url, domain: 'web' });
+      }
+    } else {
+      const lineText = line.replace(/^-\s*/, '').trim();
+      if (lineText && !lineText.startsWith('Recent context')) {
+        sources.push({ title: lineText, url: '', domain: 'offline' });
+      }
+    }
+  });
+  
+  const seen = new Set();
+  return sources.filter(s => {
+    const key = s.url || s.title;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export default function DailyInterviewQuestions() {
   const [activeSubTab, setActiveSubTab] = useState('today'); // 'today' or 'bank'
   const [questions, setQuestions] = useState([]);
@@ -220,6 +253,7 @@ export default function DailyInterviewQuestions() {
             const cat = CATEGORY_LABELS[q.category] || { label: q.category, color: 'neutral' };
             const diff = DIFFICULTY_LABELS[q.difficulty] || { label: q.difficulty, color: 'neutral' };
             const isRevealed = revealedIds.has(q.id);
+            const sources = parseSources(q.source_context);
 
             return (
               <div key={q.id} className="question-card" style={{
@@ -272,6 +306,61 @@ export default function DailyInterviewQuestions() {
                 <h3 style={{ fontSize: '1.15rem', color: 'var(--text)', margin: '0 0 1.25rem 0', lineHeight: '1.5', fontWeight: '600' }}>
                   {q.question}
                 </h3>
+
+                {/* Sourced Websites */}
+                {sources.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '-0.75rem', marginBottom: '1.25rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>📍 Sourced from:</span>
+                    {sources.map((src, srcIdx) => (
+                      src.url ? (
+                        <a
+                          key={srcIdx}
+                          href={src.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: '0.75rem',
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '6px',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid var(--line)',
+                            color: 'var(--accent)',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.2rem',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                            e.currentTarget.style.borderColor = 'var(--accent)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                            e.currentTarget.style.borderColor = 'var(--line)';
+                          }}
+                          title={src.title}
+                        >
+                          🌐 {src.domain}
+                        </a>
+                      ) : (
+                        <span
+                          key={srcIdx}
+                          style={{
+                            fontSize: '0.75rem',
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '6px',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px dashed var(--line)',
+                            color: 'var(--text-muted)'
+                          }}
+                        >
+                          📦 {src.title}
+                        </span>
+                      )
+                    ))}
+                  </div>
+                )}
 
                 {/* Show/Hide answer actions */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', paddingTop: '0.5rem' }}>

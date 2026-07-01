@@ -35,9 +35,15 @@ questions for AI Engineer / Data Science roles, mixing:
 - 2 coding/algorithms applied to ML
 - 2 behavioral/case-study
 
-Use the provided recent context (real questions/discussions from the web) to keep
-questions current and realistic, but do not copy text verbatim — write original
-questions and answers inspired by the themes.
+Use ONLY the provided recent context (real questions/discussions from the web) as
+grounding signal to keep questions current and realistic.
+Prioritize snippets tagged with source=reddit, source=glassdoor, and
+source=leetcode_discuss when deciding themes.
+Do not copy text verbatim — write original questions and answers inspired by
+the themes from the grounded context.
+
+For each item, make the model_answer practical and interview-ready.
+It should include: concise answer, why it matters, and one concrete example.
 
 Return ONLY valid JSON (no markdown fences, no preamble), as a JSON array:
 [
@@ -45,7 +51,7 @@ Return ONLY valid JSON (no markdown fences, no preamble), as a JSON array:
     "question": "...",
     "category": "ml_fundamentals|stats|system_design|coding|behavioral|genai",
     "difficulty": "easy|medium|hard",
-    "company_style": "e.g. Meta, Google, startup GenAI",
+        "company_style": "",
     "model_answer": "structured: definition -> intuition -> example -> edge cases/tradeoffs",
     "follow_up_questions": ["...", "..."]
   }
@@ -66,13 +72,21 @@ def generate_with_gemini(context_text: str) -> list[dict]:
         "gemini-2.5-flash",
         system_instruction=SYSTEM_PROMPT,
     )
-    prompt = f"Recent context from web search:\n{context_text}\n\nGenerate the 10 questions now."
+    prompt = (
+        "Recent grounded context from web search (freshness-biased):\n"
+        f"{context_text}\n\n"
+        "Generate the 10 questions now. Keep them tied to recurring themes in the context."
+    )
     response = model.generate_content(prompt)
     return _extract_json(response.text)
 
 
 def generate_with_groq(context_text: str) -> list[dict]:
-    prompt = f"Recent context from web search:\n{context_text}\n\nGenerate the 10 questions now."
+    prompt = (
+        "Recent grounded context from web search (freshness-biased):\n"
+        f"{context_text}\n\n"
+        "Generate the 10 questions now. Keep them tied to recurring themes in the context."
+    )
     response = groq_client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[

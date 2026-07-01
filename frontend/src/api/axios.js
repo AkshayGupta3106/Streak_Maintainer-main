@@ -52,7 +52,52 @@ const refreshClient = axios.create({
   baseURL: API_BASE_URL,
 });
 
+let refreshPromise = null;
+
+async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem(refreshTokenKey);
+  if (!refreshToken) {
+    throw new Error('Missing refresh token');
+  }
+
+  if (!refreshPromise) {
+    refreshPromise = refreshClient
+      .post('/auth/refresh/', { refresh: refreshToken })
+      .then(({ data }) => {
+        if (data?.access) {
+          localStorage.setItem(accessTokenKey, data.access);
+        }
+
+        if (data?.refresh) {
+          localStorage.setItem(refreshTokenKey, data.refresh);
+        }
+
+        if (!data?.access) {
+          throw new Error('Refresh response missing access token');
+        }
+
+        return data.access;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
 api.interceptors.request.use((config) => {
+  if (refreshPromise) {
+    return refreshPromise.then(() => {
+      const accessToken = localStorage.getItem(accessTokenKey);
+      if (accessToken) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${accessToken}`;
+      }
+      return config;
+    });
+  }
+
   const accessToken = localStorage.getItem(accessTokenKey);
 
   if (accessToken) {
@@ -79,27 +124,13 @@ api.interceptors.response.use(
       !requestUrl.includes('/auth/refresh/')
     ) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem(refreshTokenKey);
 
-      if (refreshToken) {
-        try {
-          const { data } = await refreshClient.post('/auth/refresh/', { refresh: refreshToken });
-
-          if (data.access) {
-            localStorage.setItem(accessTokenKey, data.access);
-          }
-
-          if (data.refresh) {
-            localStorage.setItem(refreshTokenKey, data.refresh);
-          }
-
-          originalRequest.headers = originalRequest.headers || {};
-          originalRequest.headers.Authorization = `Bearer ${data.access}`;
-          return api(originalRequest);
-        } catch {
-          clearStoredAuth();
-        }
-      } else {
+      try {
+        const newAccessToken = await refreshAccessToken();
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch {
         clearStoredAuth();
       }
 

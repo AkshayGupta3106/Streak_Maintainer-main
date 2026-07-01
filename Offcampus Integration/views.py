@@ -19,7 +19,6 @@ Endpoints:
 """
 
 import logging
-import os
 from collections import defaultdict
 from datetime import date, timedelta
 
@@ -110,33 +109,6 @@ class DashboardView(APIView):
     """
 
     def get(self, request):
-        def _dedupe_rows(rows):
-            seen = set()
-            unique = []
-            for row in rows:
-                company = (row.get("company_name") or "").strip().lower()
-                role = " ".join((row.get("role") or "").strip().lower().split())
-                link = (row.get("career_portal_link") or row.get("source_url") or "").strip().lower()
-
-                if link:
-                    key = ("url", link)
-                else:
-                    key = (
-                        "fallback",
-                        company,
-                        role,
-                        row.get("expected_hiring_window_start"),
-                        row.get("expected_hiring_window_end"),
-                        row.get("opportunity_type"),
-                    )
-
-                if key in seen:
-                    continue
-                seen.add(key)
-                unique.append(row)
-
-            return unique
-
         today = date.today()
         base_qs = (
             Opportunity.objects
@@ -169,26 +141,20 @@ class DashboardView(APIView):
         )
 
         s = OpportunitySerializer
-        apply_now_rows = _dedupe_rows(s(active_or_imminent, many=True).data)
-        coming_soon_rows = _dedupe_rows(s(coming_soon, many=True).data)
-        prepare_now_rows = _dedupe_rows(s(prepare_now, many=True).data)
-        long_term_rows = _dedupe_rows(s(long_term, many=True).data)
-        missed_rows = _dedupe_rows(s(missed, many=True).data)
-
         return Response({
-            "apply_now": apply_now_rows,
-            "coming_soon": coming_soon_rows,
-            "prepare_now": prepare_now_rows,
-            "long_term": long_term_rows,
-            "missed": missed_rows,
+            "apply_now":   s(active_or_imminent, many=True).data,
+            "coming_soon": s(coming_soon, many=True).data,
+            "prepare_now": s(prepare_now, many=True).data,
+            "long_term":   s(long_term, many=True).data,
+            "missed":      s(missed, many=True).data,
             "meta": {
                 "today": today,
                 "counts": {
-                    "apply_now": len(apply_now_rows),
-                    "coming_soon": len(coming_soon_rows),
-                    "prepare_now": len(prepare_now_rows),
-                    "long_term": len(long_term_rows),
-                    "missed": len(missed_rows),
+                    "apply_now":   active_or_imminent.count(),
+                    "coming_soon": coming_soon.count(),
+                    "prepare_now": prepare_now.count(),
+                    "long_term":   long_term.count(),
+                    "missed":      missed.count(),
                 },
             },
         })
@@ -326,16 +292,6 @@ class ScrapeView(APIView):
     """
 
     def post(self, request):
-        searxng_urls = [u.strip() for u in os.getenv("SEARXNG_BASE_URLS", "").split(",") if u.strip()]
-        if not searxng_urls:
-            searxng_urls = ["https://searx.be", "https://search.sapti.me"]
-
-        provider_config = {
-            "searxng_instances": searxng_urls,
-            "ddg_fallback_enabled": os.getenv("ALLOW_DDG_FALLBACK", "false").strip().lower() in {"1", "true", "yes", "on"},
-            "provider_order": os.getenv("SEARCH_PROVIDER_ORDER", "searxng"),
-        }
-
         requested = request.data.get("sources", [])
         all_scrapers = get_all_scrapers()
 
@@ -371,7 +327,4 @@ class ScrapeView(APIView):
                 logger.exception("Scraper failed: %s", scraper.source_name)
                 results[scraper.source_name] = {"status": "error", "error": str(exc)}
 
-        return Response({
-            "results": results,
-            "search_provider_config": provider_config,
-        })
+        return Response({"results": results})

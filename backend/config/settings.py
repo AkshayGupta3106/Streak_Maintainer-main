@@ -177,6 +177,12 @@ GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
 GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='')
 FRONTEND_APP_URL = env('FRONTEND_APP_URL', default='http://localhost:3000')
 
+
+# AI API Keys
+GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
+GROQ_API_KEY = env('GROQ_API_KEY', default='')
+
+
 HIRING_TRACKER = {
     "DIGEST_RECIPIENT": "recipient@local.com",
     "DIGEST_FROM": "hiring-tracker@local.com",

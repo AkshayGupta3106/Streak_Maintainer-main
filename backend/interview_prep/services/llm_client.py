@@ -1,0 +1,92 @@
+"""
+Structured question generation with provider fallback.
+Gemini: 1,500 req/day free, no card required.
+Groq: fallback, generous free tier on Llama models.
+"""
+import json
+import logging
+import os
+import re
+
+import google.generativeai as genai
+from groq import Groq
+
+logger = logging.getLogger(__name__)
+
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
+
+SYSTEM_PROMPT = """You are a FAANG+ technical interviewer. Generate exactly 10 interview
+questions for AI Engineer / Data Science roles, mixing:
+- 2 ML fundamentals
+- 2 statistics/probability
+- 2 system design (ML/GenAI)
+- 2 coding/algorithms applied to ML
+- 2 behavioral/case-study
+
+Use the provided recent context (real questions/discussions from the web) to keep
+questions current and realistic, but do not copy text verbatim — write original
+questions and answers inspired by the themes.
+
+Return ONLY valid JSON (no markdown fences, no preamble), as a JSON array:
+[
+  {
+    "question": "...",
+    "category": "ml_fundamentals|stats|system_design|coding|behavioral|genai",
+    "difficulty": "easy|medium|hard",
+    "company_style": "e.g. Meta, Google, startup GenAI",
+    "model_answer": "structured: definition -> intuition -> example -> edge cases/tradeoffs",
+    "follow_up_questions": ["...", "..."]
+  }
+]
+"""
+
+
+def _extract_json(text: str) -> list[dict]:
+    """LLMs sometimes wrap JSON in fences despite instructions — strip defensively."""
+    text = text.strip()
+    text = re.sub(r"^```json\s*|\s*```$", "", text)
+    text = re.sub(r"^```\s*|\s*```$", "", text)
+    return json.loads(text)
+
+
+def generate_with_gemini(context_text: str) -> list[dict]:
+    model = genai.GenerativeModel(
+        "gemini-2.5-flash",
+        system_instruction=SYSTEM_PROMPT,
+    )
+    prompt = f"Recent context from web search:\n{context_text}\n\nGenerate the 10 questions now."
+    response = model.generate_content(prompt)
+    return _extract_json(response.text)
+
+
+def generate_with_groq(context_text: str) -> list[dict]:
+    prompt = f"Recent context from web search:\n{context_text}\n\nGenerate the 10 questions now."
+    response = groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.7,
+    )
+    return _extract_json(response.choices[0].message.content)
+
+
+def generate_questions(context_text: str) -> tuple[list[dict], str]:
+    """
+    Tries Gemini first, falls back to Groq on failure.
+    Returns (questions, provider_used).
+    """
+    try:
+        questions = generate_with_gemini(context_text)
+        return questions, "gemini"
+    except Exception as e:
+        logger.warning(f"Gemini generation failed, falling back to Groq: {e}")
+
+    try:
+        questions = generate_with_groq(context_text)
+        return questions, "groq"
+    except Exception as e:
+        logger.error(f"Groq fallback also failed: {e}")
+        raise RuntimeError("Both Gemini and Groq generation failed") from e

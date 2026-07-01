@@ -23,7 +23,11 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ['*']),
     CORS_ALLOW_ALL_ORIGINS=(bool, True),
 )
-environ.Env.read_env(BASE_DIR / '.env')
+# Read .env from either root directory or backend/ directory
+if (BASE_DIR.parent / '.env').exists():
+    environ.Env.read_env(BASE_DIR.parent / '.env')
+else:
+    environ.Env.read_env(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -52,8 +56,8 @@ INSTALLED_APPS = [
     'django_filters',
     'core',
     'hiring_tracker',
+    'interview_prep',
 ]
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -177,6 +181,24 @@ HIRING_TRACKER = {
     "DIGEST_RECIPIENT": "recipient@local.com",
     "DIGEST_FROM": "hiring-tracker@local.com",
 }
+
+# Celery Configuration
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "generate-daily-interview-questions": {
+        "task": "interview_prep.tasks.generate_daily_questions",
+        "schedule": crontab(hour=6, minute=0),  # 6 AM daily
+    },
+}
+
 
 
 

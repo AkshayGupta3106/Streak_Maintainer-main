@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
     path('api/hiring/', include('hiring_tracker.urls')),
+    path('api/', include('interview_prep.urls')),
 ]

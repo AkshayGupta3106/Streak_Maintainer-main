@@ -1,3 +1,7 @@
+# Root ignored files
+venv/
+.env
+
 # Backend ignored files
 backend/.venv/
 backend/venv/

@@ -92,22 +92,29 @@ def search_ddg(query: str, max_results: int = 5) -> list[dict]:
     Rate-limit yourself — DDG will block aggressive scraping.
     """
     results = []
-    try:
-        with DDGS() as ddgs:
-            # Prefer fresh results when DDGS supports time filters.
-            try:
-                search_iter = ddgs.text(query, max_results=max_results, timelimit="m")
-            except TypeError:
-                search_iter = ddgs.text(query, max_results=max_results)
+    backends_to_try = ["brave", "yahoo", "yandex"]
+    
+    for backend in backends_to_try:
+        try:
+            with DDGS() as ddgs:
+                # Prefer fresh results when DDGS supports time filters.
+                try:
+                    search_iter = ddgs.text(query, max_results=max_results, timelimit="m", backend=backend)
+                except TypeError:
+                    search_iter = ddgs.text(query, max_results=max_results, backend=backend)
 
-            for r in search_iter:
-                results.append({
-                    "title": r.get("title", ""),
-                    "href": r.get("href", ""),
-                    "body": r.get("body", ""),
-                })
-    except Exception as e:
-        logger.warning(f"DDG search failed for '{query}': {e}")
+                for r in search_iter:
+                    results.append({
+                        "title": r.get("title", ""),
+                        "href": r.get("href", ""),
+                        "body": r.get("body", ""),
+                    })
+                if results:
+                    break
+        except Exception as e:
+            logger.warning(f"DDG search failed for '{query}' using backend '{backend}': {e}")
+            continue
+
     time.sleep(1.5)  # be polite between calls
     return results
 

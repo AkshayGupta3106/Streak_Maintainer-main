@@ -1,3 +1,4 @@
+from datetime import date
 import logging
 from celery import shared_task
 from django.utils import timezone
@@ -12,6 +13,18 @@ logger = logging.getLogger(__name__)
 
 @shared_task(bind=True, max_retries=2)
 def generate_daily_questions(self):
+    today_utc = timezone.now().date()
+    today_local = date.today()
+    
+    count_utc = DailyInterviewQuestion.objects.filter(date_generated=today_utc).count()
+    count_local = DailyInterviewQuestion.objects.filter(date_generated=today_local).count()
+    
+    if count_utc >= 10 or count_local >= 10:
+        logger.info(
+            f"Daily questions already exist (UTC count: {count_utc}, Local count: {count_local}). Skipping generation."
+        )
+        return "skipped (already exists)"
+
     run = GenerationRun.objects.create(status="pending")
 
     try:

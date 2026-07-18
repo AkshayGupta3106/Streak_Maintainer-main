@@ -24,10 +24,10 @@ env = environ.Env(
     CORS_ALLOW_ALL_ORIGINS=(bool, True),
 )
 # Read .env from either root directory or backend/ directory
-if (BASE_DIR.parent / '.env').exists():
-    environ.Env.read_env(BASE_DIR.parent / '.env')
-else:
+if (BASE_DIR / '.env').exists():
     environ.Env.read_env(BASE_DIR / '.env')
+elif (BASE_DIR.parent / '.env').exists():
+    environ.Env.read_env(BASE_DIR.parent / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -203,7 +203,12 @@ CELERY_BEAT_SCHEDULE = {
         "task": "interview_prep.tasks.generate_daily_questions",
         "schedule": crontab(hour=6, minute=0),  # 6 AM daily
     },
+    "run-platform-first-scrapers-daily": {
+        "task": "hiring_tracker.tasks.run_platform_first_scrapers",
+        "schedule": crontab(hour=2, minute=0),  # 2 AM daily
+    },
 }
+
 
 
 

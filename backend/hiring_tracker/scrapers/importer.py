@@ -30,7 +30,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from django.db.models import Q
 from django.utils.text import slugify
 
-from hiring_tracker.models import Company, CompanyType, Opportunity, OpportunityStatus, SourceType
+from hiring_tracker.models import Company, CompanyType, Opportunity, OpportunityStatus, SourceType, PriorityLevel
 from hiring_tracker.scrapers.base import NormalizedListing
 from hiring_tracker.scrapers.normalizer import clean_company_name
 
@@ -67,6 +67,33 @@ class ImportStats:
             f"manual_protected={self.skipped_manual_protected}) "
             f"auto_created_company={self.auto_created_company}"
         )
+
+
+def rank_listing(listing: NormalizedListing) -> int:
+    """
+    Ranks the opportunity based on role keywords.
+    - CRITICAL (4): Role/notes contain 2027-batch keywords, or advanced AI terms (genai, llm, deep learning, computer vision, nlp).
+    - HIGH (3): Role/notes contain machine learning, data scientist, data science, ai engineer, ml engineer.
+    - MEDIUM (2): General technical/fresher roles.
+    - LOW (1): Other roles.
+    """
+    role = (listing.role or "").lower()
+    notes = (listing.notes or "").lower()
+
+    # Check 2027 batch targeting first to boost them to CRITICAL
+    batch_2027_keywords = {"2027", "batch 2027", "batch of 2027", "2027 batch", "2027 grad", "2027 graduate", "2027 graduates", "class of 2027"}
+    if any(kw in role for kw in batch_2027_keywords) or any(kw in notes for kw in batch_2027_keywords):
+        return PriorityLevel.CRITICAL
+
+    critical_keywords = {"genai", "generative ai", "llm", "large language model", "deep learning", "computer vision", "nlp"}
+    high_keywords = {"machine learning", "data scientist", "data science", "ai engineer", "ml engineer", "artificial intelligence"}
+
+    if any(kw in role for kw in critical_keywords) or any(kw in notes for kw in critical_keywords):
+        return PriorityLevel.CRITICAL
+    elif any(kw in role for kw in high_keywords) or any(kw in notes for kw in high_keywords):
+        return PriorityLevel.HIGH
+
+    return PriorityLevel.MEDIUM
 
 
 def _normalize_role(role: str) -> str:
@@ -213,6 +240,7 @@ def import_listings(listings: List[NormalizedListing]) -> ImportStats:
             stats.skipped_manual_protected += 1
             continue
 
+        priority = rank_listing(listing)
         defaults = {
             "opportunity_type": listing.opportunity_type,
             "expected_registration_start": listing.expected_registration_start,
@@ -224,6 +252,7 @@ def import_listings(listings: List[NormalizedListing]) -> ImportStats:
             "source_url": listing.source_url,
             "is_date_confirmed": True,
             "notes": listing.notes or (existing.notes if existing else ""),
+            "priority_level": priority,
         }
         if existing is not None:
             existing.role = listing.role
@@ -243,6 +272,7 @@ def import_listings(listings: List[NormalizedListing]) -> ImportStats:
             existing.source_url = defaults["source_url"]
             existing.is_date_confirmed = defaults["is_date_confirmed"]
             existing.notes = defaults["notes"]
+            existing.priority_level = priority
             existing.save(
                 update_fields=[
                     "role",
@@ -256,6 +286,7 @@ def import_listings(listings: List[NormalizedListing]) -> ImportStats:
                     "source_url",
                     "is_date_confirmed",
                     "notes",
+                    "priority_level",
                     "updated_at",
                 ]
             )
@@ -277,6 +308,7 @@ def import_listings(listings: List[NormalizedListing]) -> ImportStats:
             is_date_confirmed=defaults["is_date_confirmed"],
             notes=defaults["notes"],
             status=OpportunityStatus.UPCOMING,
+            priority_level=priority,
         )
 
         stats.created += 1

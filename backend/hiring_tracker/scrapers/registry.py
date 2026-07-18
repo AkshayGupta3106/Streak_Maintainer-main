@@ -8,50 +8,21 @@ Add a new source: import it and append to _SCRAPERS.
 
 from typing import List
 from hiring_tracker.scrapers.base import BaseScraper
-from hiring_tracker.scrapers.sources.internshala import IntershalaScraper
-from hiring_tracker.scrapers.sources.search_backed import (
-    AICTEInternshipPortalSearchScraper,
-    AdobeCareersSearchScraper,
-    AnalyticsVidhyaJobsSearchScraper,
-    AtlassianCareersSearchScraper,
-    CutshortSearchScraper,
-    FlipkartCareersSearchScraper,
-    FounditSearchScraper,
-    GoogleCareersSearchScraper,
-    HiristSearchScraper,
-    InstahyreSearchScraper,
-    MicrosoftIndiaCareersSearchScraper,
-    NaukriSearchScraper,
-    NVIDIAIndiaCareersSearchScraper,
-    OracleCareersSearchScraper,
-    PhonePeCareersSearchScraper,
-    SamsungResearchIndiaCareersSearchScraper,
-    SupersetSearchScraper,
-    UnstopSearchScraper,
-)
+from hiring_tracker.scrapers.sources.internshala import InternshalaScraper
+from hiring_tracker.scrapers.sources.wellfound import WellfoundScraper
+from hiring_tracker.scrapers.sources.hirist import HiristScraper
+from hiring_tracker.scrapers.sources.cutshort import CutshortScraper
+from hiring_tracker.scrapers.sources.unstop import UnstopScraper
 
 _SCRAPERS: List[BaseScraper] = [
-    IntershalaScraper(),
-    UnstopSearchScraper(),
-    SupersetSearchScraper(),
-    CutshortSearchScraper(),
-    InstahyreSearchScraper(),
-    HiristSearchScraper(),
-    NaukriSearchScraper(),
-    FounditSearchScraper(),
-    AICTEInternshipPortalSearchScraper(),
-    AnalyticsVidhyaJobsSearchScraper(),
-    NVIDIAIndiaCareersSearchScraper(),
-    MicrosoftIndiaCareersSearchScraper(),
-    GoogleCareersSearchScraper(),
-    AtlassianCareersSearchScraper(),
-    OracleCareersSearchScraper(),
-    AdobeCareersSearchScraper(),
-    SamsungResearchIndiaCareersSearchScraper(),
-    FlipkartCareersSearchScraper(),
-    PhonePeCareersSearchScraper(),
+    InternshalaScraper(),
+    WellfoundScraper(),
+    HiristScraper(),
+    CutshortScraper(),
+    UnstopScraper(),
 ]
 
 
 def get_all_scrapers() -> List[BaseScraper]:
     return list(_SCRAPERS)
+

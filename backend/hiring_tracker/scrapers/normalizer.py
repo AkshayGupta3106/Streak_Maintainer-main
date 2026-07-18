@@ -96,3 +96,15 @@ def clean_company_name(raw: str) -> str:
         flags=re.IGNORECASE,
     )
     return re.sub(r"\s+", " ", raw).strip(" .,-")
+
+
+ROLE_HINT_RE = re.compile(
+    r"(data\s*science|data\s*scientist|machine\s*learning|ml\s*engineer|ai\s*engineer|genai|nlp|computer\s*vision|artificial\s*intelligence|deep\s*learning|llm)",
+    re.IGNORECASE,
+)
+
+
+def is_ai_ml_role(role_name: str) -> bool:
+    """Returns True if the role name contains AI/ML/Data Science keywords."""
+    return bool(ROLE_HINT_RE.search(role_name))
+

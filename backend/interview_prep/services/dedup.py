@@ -2,26 +2,41 @@
 Embedding-based dedup so you don't repeat questions from the last 30 days.
 Uses Gemini's embedding model (free) — no separate service needed.
 """
+import logging
 import math
-import google.generativeai as genai
-from django.utils import timezone
+import os
 from datetime import timedelta
+
+from django.utils import timezone
+from google import genai
 
 from ..models import DailyInterviewQuestion
 
+logger = logging.getLogger(__name__)
+
 SIMILARITY_THRESHOLD = 0.85
+EMBEDDING_MODEL = "gemini-embedding-2"
+
+_client = None
 
 
-def embed_text(text: str) -> list[float]:
-    import os
-    if not os.environ.get("GEMINI_API_KEY"):
+def _get_client():
+    """Lazily create the client so a missing key doesn't blow up at import time."""
+    global _client
+    if _client is None and os.environ.get("GEMINI_API_KEY"):
+        _client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    return _client
+
+
+def embed_text(text: str) -> list[float] | None:
+    client = _get_client()
+    if client is None:
         return None
     try:
-        result = genai.embed_content(model="models/embedding-001", content=text)
-        return result["embedding"]
+        result = client.models.embed_content(model=EMBEDDING_MODEL, contents=text)
+        return list(result.embeddings[0].values)
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning(f"Failed to embed text: {e}")
+        logger.warning(f"Failed to embed text: {e}")
         return None
 
 

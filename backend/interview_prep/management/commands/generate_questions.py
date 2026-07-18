@@ -9,7 +9,10 @@ class Command(BaseCommand):
         self.stdout.write("Starting daily question generation...")
         try:
             # We call the task function directly (not .delay()) to run synchronously
-            generate_daily_questions()
-            self.stdout.write(self.style.SUCCESS("Successfully generated daily questions!"))
+            res = generate_daily_questions()
+            if res == "skipped (already exists)":
+                self.stdout.write(self.style.WARNING("Skipped: 10 or more daily questions already exist for today."))
+            else:
+                self.stdout.write(self.style.SUCCESS("Successfully generated daily questions!"))
         except Exception as e:
             raise CommandError(f"Generation failed: {e}")

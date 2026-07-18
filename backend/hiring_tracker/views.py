@@ -319,59 +319,35 @@ class TimelineView(APIView):
 class ScrapeView(APIView):
     """
     POST /api/hiring/scrape/
-    Body: { "sources": ["internshala", "unstop"] }  OR  {} to run all
+    Body: { "sources": ["internshala", "unstop"], "async": false }  OR  {} to run all
 
-    Runs scrapers synchronously. For production you'd kick off a Celery
-    task here instead and return a task ID - see the comment in the body.
+    Runs the platform-first scraping pipeline.
     """
 
     def post(self, request):
-        searxng_urls = [u.strip() for u in os.getenv("SEARXNG_BASE_URLS", "").split(",") if u.strip()]
-        if not searxng_urls:
-            searxng_urls = ["https://searx.be", "https://search.sapti.me"]
-
-        provider_config = {
-            "searxng_instances": searxng_urls,
-            "ddg_fallback_enabled": os.getenv("ALLOW_DDG_FALLBACK", "false").strip().lower() in {"1", "true", "yes", "on"},
-            "provider_order": os.getenv("SEARCH_PROVIDER_ORDER", "searxng"),
-        }
-
         requested = request.data.get("sources", [])
-        all_scrapers = get_all_scrapers()
+        run_async = request.data.get("async", False)
+
+        from hiring_tracker.tasks import run_platform_first_scrapers
 
         if requested:
-            scrapers = [s for s in all_scrapers if s.source_name in requested]
-            unknown = set(requested) - {s.source_name for s in scrapers}
+            all_scrapers = get_all_scrapers()
+            valid_sources = {s.source_name for s in all_scrapers}
+            unknown = set(requested) - valid_sources
             if unknown:
                 return Response(
-                    {"error": f"Unknown sources: {unknown}. Available: {[s.source_name for s in all_scrapers]}"},
+                    {"error": f"Unknown sources: {unknown}. Available: {list(valid_sources)}"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+
+        if run_async:
+            task = run_platform_first_scrapers.delay(requested if requested else None)
+            return Response({"task_id": task.id, "status": "pending"}, status=status.HTTP_202_ACCEPTED)
         else:
-            scrapers = all_scrapers
-
-        # --- For production: swap the block below for a Celery task dispatch ---
-        # from hiring_tracker.tasks import run_scrapers_task
-        # task = run_scrapers_task.delay([s.source_name for s in scrapers])
-        # return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
-        # -----------------------------------------------------------------------
-
-        results = {}
-        for scraper in scrapers:
             try:
-                listings = scraper.run()
-                stats = import_listings(listings)
-                results[scraper.source_name] = {
-                    "status": "ok",
-                    "seen": stats.seen,
-                    "created": stats.created,
-                    "updated": stats.updated,
-                }
+                task_result = run_platform_first_scrapers(requested if requested else None)
+                return Response(task_result, status=status.HTTP_200_OK)
             except Exception as exc:
-                logger.exception("Scraper failed: %s", scraper.source_name)
-                results[scraper.source_name] = {"status": "error", "error": str(exc)}
+                logger.exception("Scraper pipeline execution failed")
+                return Response({"status": "error", "error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return Response({
-            "results": results,
-            "search_provider_config": provider_config,
-        })

@@ -13,17 +13,22 @@ from bs4 import BeautifulSoup
 
 from hiring_tracker.scrapers.base import BaseScraper, NormalizedListing
 from hiring_tracker.scrapers.http_utils import get
-from hiring_tracker.scrapers.normalizer import guess_opportunity_type, parse_date_str, clean_company_name
+from hiring_tracker.scrapers.normalizer import guess_opportunity_type, parse_date_str, clean_company_name, is_ai_ml_role
 
 logger = logging.getLogger("hiring_tracker.scrapers.internshala")
 
 
-class IntershalaScraper(BaseScraper):
+class InternshalaScraper(BaseScraper):
     source_name = "internshala"
     base_url = "https://internshala.com"
     request_delay_seconds = 2.0
 
-    ENDPOINTS = [('https://internshala.com/internships/computer-science-internship/', 'INTERNSHIP'), ('https://internshala.com/jobs/computer-science-jobs/', 'FULL_TIME')]
+    ENDPOINTS = [
+        ('https://internshala.com/internships/computer-science-internship/', 'INTERNSHIP'),
+        ('https://internshala.com/jobs/computer-science-jobs/', 'FULL_TIME'),
+        ('https://internshala.com/internships/data-science-internship/', 'INTERNSHIP'),
+        ('https://internshala.com/jobs/data-science-jobs/', 'FULL_TIME'),
+    ]
 
     # -------------------------------------------------------------------------
     # SELECTOR NOTE: Selectors below are based on the site structure at build
@@ -32,11 +37,11 @@ class IntershalaScraper(BaseScraper):
     # won't need to change.
     # -------------------------------------------------------------------------
     LIST_SEL = "div.individual_internship"
-    COMPANY_SEL = ".company_name h4"
-    ROLE_SEL = ".profile h3"
-    LOCATION_SEL = ".location_link"
+    COMPANY_SEL = ".company-name"
+    ROLE_SEL = "a.job-title-href"
+    LOCATION_SEL = ".row-1-item.locations span"
     DEADLINE_SEL = ".application-ends span"
-    LINK_SEL = "a.view_detail_button"
+    LINK_SEL = "a.job-title-href"
 
     def run(self) -> List[NormalizedListing]:
         results = []
@@ -48,7 +53,6 @@ class IntershalaScraper(BaseScraper):
         return results
 
     def _scrape_page(self, url: str, default_type: str) -> List[NormalizedListing]:
-        
         resp = get(url, delay=self.request_delay_seconds)
         soup = BeautifulSoup(resp.text, "html.parser")
         cards = soup.select(self.LIST_SEL) if self.LIST_SEL else []
@@ -72,6 +76,9 @@ class IntershalaScraper(BaseScraper):
                 if not company or not role:
                     continue
 
+                if not is_ai_ml_role(role):
+                    continue
+
                 window_start = parse_date_str(deadline_raw) or today + timedelta(days=30)
                 window_end = window_start + timedelta(days=30)
 
@@ -89,4 +96,5 @@ class IntershalaScraper(BaseScraper):
                 logger.debug("Error parsing card: %s", exc)
                 continue
         return listings
+
 
